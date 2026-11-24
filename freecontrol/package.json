@@ -1,0 +1,93 @@
+{
+  "name": "@pdone/fuyu-freecontrol",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "View and control local Android devices from Fuyu",
+  "license": "MIT",
+  "author": {
+    "name": "pdone",
+    "url": "https://github.com/pdone"
+  },
+  "repository": "github:pdone/fuyu-plugins",
+  "homepage": "https://github.com/pdone/FreeControl",
+  "bugs": "https://github.com/pdone/fuyu-plugins/issues",
+  "keywords": [
+    "FreeControl",
+    "Android",
+    "scrcpy",
+    "设备控制",
+    "device control"
+  ],
+  "engines": {
+    "fuyu": ">=0.3.13"
+  },
+  "scripts": {
+    "dev": "fuyu-plugin dev",
+    "build": "fuyu-plugin build",
+    "check": "fuyu-plugin check",
+    "check:market": "fuyu-plugin check --market --strict",
+    "package": "fuyu-plugin pack",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "typecheck": "tsc",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.1.8",
+    "eslint": "^10.14.0",
+    "fuyu-plugin": "^2.1.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.72.1"
+  },
+  "fuyu": {
+    "manifest": 1,
+    "displayName": {
+      "zh-CN": "FreeControl",
+      "en": "FreeControl"
+    },
+    "description": {
+      "zh-CN": "在浮屿中查看和控制本机 Android 设备",
+      "en": "View and control local Android devices from Fuyu"
+    },
+    "icon": "assets/icon.png",
+    "screenshots": [
+      {
+        "path": "screenshots/page.png",
+        "caption": {
+          "zh-CN": "设备列表与连接控制",
+          "en": "Device list and connection controls"
+        }
+      },
+      {
+        "path": "screenshots/bar.png",
+        "caption": {
+          "zh-CN": "收起条显示已连接设备数",
+          "en": "Collapsed bar shows connected devices"
+        }
+      }
+    ],
+    "categories": [
+      "developer",
+      "utilities"
+    ],
+    "host": "dist/host.js",
+    "client": {
+      "island": "dist/island.js",
+      "settings": "dist/settings.js"
+    },
+    "inject": {
+      "required": [
+        "clients",
+        "settings"
+      ]
+    },
+    "slots": [
+      "island.page/v1",
+      "island.collapsed/v1",
+      "settings.section/v1"
+    ],
+    "network": [
+      "localhost"
+    ]
+  }
+}

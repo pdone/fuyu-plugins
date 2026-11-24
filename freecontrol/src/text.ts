@@ -1,0 +1,96 @@
+import type { ConnectionStatus, DeviceKind, ErrorCode } from "./protocol.ts";
+
+const en = {
+  title: "FreeControl",
+  collapsedLabel: "FreeControl devices",
+  summary: (total: number, online: number, connected: number) =>
+    `${total} devices, ${online} online, ${connected} connected`,
+  collapsed: (connected: number, total: number) => `${connected}/${total}`,
+  refresh: "Check again",
+  checking: "Checking…",
+  retry: "Check again",
+  connect: "Connect",
+  disconnect: "Disconnect",
+  connecting: "Connecting…",
+  disconnecting: "Disconnecting…",
+  emptyTitle: "No devices yet",
+  emptyBody: "Add a device in FreeControl, then come back here.",
+  unpairedTitle: "FreeControl not found",
+  unpairedBody: "Enable Fuyu device control in FreeControl settings and keep FreeControl running.",
+  expiredTitle: "Reconnect FreeControl",
+  expiredBody: "FreeControl no longer accepts this connection. Turn the control off and on again in FreeControl.",
+  settingsTitle: "FreeControl automatic connection",
+  autoHint: "After Fuyu device control is enabled, this plugin finds and connects to FreeControl automatically.",
+  statusLabel: "Status",
+  lastChecked: (time: string) => `Updated ${time}`,
+  kind: { usb: "USB", wifi: "Wi-Fi" } satisfies Record<DeviceKind, string>,
+  status: {
+    unpaired: "Not discovered",
+    connecting: "Connecting",
+    ready: "Connected",
+    offline: "FreeControl is not running",
+    unauthorized: "Reconnect",
+  } satisfies Record<ConnectionStatus, string>,
+  errors: {
+    invalid_pairing: "The local connection info is invalid.",
+    pairing_failed: "The local connection could not be verified.",
+    unauthorized: "Access has expired. Reconnect from FreeControl.",
+    offline: "Could not reach FreeControl. Make sure it is running and device control is enabled.",
+    device_not_found: "This device no longer exists.",
+    device_unavailable: "This device is not available right now.",
+    operation_failed: "The action failed. Please try again.",
+    service_unavailable: "FreeControl is temporarily unavailable.",
+    internal: "Something went wrong.",
+  } satisfies Record<ErrorCode, string>,
+};
+
+const zhCN: typeof en = {
+  title: "FreeControl",
+  collapsedLabel: "FreeControl 设备",
+  summary: (total: number, online: number, connected: number) =>
+    `${total} 台设备，${online} 台在线，${connected} 台已连接`,
+  collapsed: (connected: number, total: number) => `${connected}/${total}`,
+  refresh: "重新检测",
+  checking: "正在检测…",
+  retry: "重新检测",
+  connect: "连接",
+  disconnect: "断开",
+  connecting: "正在连接…",
+  disconnecting: "正在断开…",
+  emptyTitle: "还没有设备",
+  emptyBody: "先在 FreeControl 中添加设备，再回到这里。",
+  unpairedTitle: "未发现 FreeControl",
+  unpairedBody: "请在 FreeControl 设置中开启浮屿设备控制，并保持程序运行。",
+  expiredTitle: "重新连接 FreeControl",
+  expiredBody: "FreeControl 已不再接受这个连接，请在 FreeControl 中关闭再开启浮屿设备控制。",
+  settingsTitle: "FreeControl 自动连接",
+  autoHint: "开启浮屿设备控制后，插件会自动发现并连接本机 FreeControl。",
+  statusLabel: "状态",
+  lastChecked: (time: string) => `更新于 ${time}`,
+  kind: { usb: "USB", wifi: "Wi-Fi" },
+  status: {
+    unpaired: "未发现",
+    connecting: "正在连接",
+    ready: "已连接",
+    offline: "FreeControl 未运行",
+    unauthorized: "需要重新连接",
+  },
+  errors: {
+    invalid_pairing: "本机连接信息无效。",
+    pairing_failed: "无法验证本机连接。",
+    unauthorized: "访问已失效，请在 FreeControl 中重新连接。",
+    offline: "无法连接 FreeControl，请确认它正在运行且已开启浮屿设备控制。",
+    device_not_found: "这台设备已不存在。",
+    device_unavailable: "这台设备当前不可连接。",
+    operation_failed: "操作失败，请稍后重试。",
+    service_unavailable: "FreeControl 暂时不可用。",
+    internal: "发生了未知错误。",
+  },
+};
+
+export const localized = {
+  title: { "zh-CN": zhCN.title, en: en.title },
+  collapsedLabel: { "zh-CN": zhCN.collapsedLabel, en: en.collapsedLabel },
+};
+
+export const text = navigator.language.toLowerCase().startsWith("zh") ? zhCN : en;
