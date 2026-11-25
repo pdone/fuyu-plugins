@@ -2,11 +2,14 @@
 import { lstat, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { Context } from "fuyu-plugin";
+import { clipboardV1 } from "fuyu-plugin/services";
 import {
+  DOWNLOAD_URL,
   METHODS,
   TOPICS,
   emptySnapshot,
   type CallResult,
+  type CopyDownloadLinkResult,
   type ConnectionStatus,
   type Device,
   type DeviceAction,
@@ -74,10 +77,15 @@ export function apply(ctx: Context) {
     ctx.clients.publish(TOPICS.state, snapshot);
     void ctx.settings.setup?.({
       needed: snapshot.status !== "ready",
-      hint: {
-        "zh-CN": "在 FreeControl 设置中开启浮屿设备控制",
-        en: "Enable Fuyu device control in FreeControl settings",
-      },
+      hint: snapshot.installed
+        ? {
+            "zh-CN": "在 FreeControl 设置中开启浮屿设备控制",
+            en: "Enable Fuyu device control in FreeControl settings",
+          }
+        : {
+            "zh-CN": "安装并开启 FreeControl",
+            en: "Install and enable FreeControl",
+          },
     });
   }
 
@@ -158,6 +166,7 @@ export function apply(ctx: Context) {
       const devices = state.devices.map(normalizeDevice);
       replaceSnapshot({
         status: "ready",
+        installed: currentSnapshot().installed,
         devices,
         connectedCount: devices.filter((device) => device.status === "connected").length,
         onlineCount: devices.filter((device) => device.status === "idle" || device.status === "connected").length,
@@ -184,25 +193,26 @@ export function apply(ctx: Context) {
     if (ticking) return;
     ticking = true;
     try {
+      const installed = await detectInstalled();
       const found = await loadDiscovery();
       if (found) {
         missingSince = null;
         if (!connection || connection.baseUrl !== found.baseUrl || connection.token !== found.token) {
           connection = found;
-          replaceSnapshot({ ...emptySnapshot(), status: "connecting" }, true);
+          replaceSnapshot({ ...emptySnapshot(), installed, status: "connecting" }, true);
         }
         await pollState();
         return;
       }
       if (!connection) {
-        replaceSnapshot(emptySnapshot());
+        replaceSnapshot({ ...emptySnapshot(), installed });
         return;
       }
       missingSince ??= Date.now();
       if (Date.now() - missingSince >= DISCOVERY_GRACE_MS) {
         connection = null;
         missingSince = null;
-        replaceSnapshot(emptySnapshot(), true);
+        replaceSnapshot({ ...emptySnapshot(), installed }, true);
       }
     } finally {
       ticking = false;
@@ -238,6 +248,15 @@ export function apply(ctx: Context) {
     if (typeof params.deviceId !== "string") return fail("device_not_found");
     return action(params.deviceId, "disconnect").then(ok, (error: unknown) => fail(errorCode(error)));
   });
+  ctx.clients.handle(METHODS.copyDownloadLink, async (): Promise<CopyDownloadLinkResult> => {
+    try {
+      const clipboard = ctx.services.get(clipboardV1);
+      await clipboard.copyText({ text: DOWNLOAD_URL });
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  });
 
   ensurePolling();
   void tick();
@@ -261,19 +280,36 @@ function normalizeDevice(device: Device): Device {
   };
 }
 
-function discoveryCandidates(): string[] {
-  const file = DISCOVERY_FILE;
+function dataRoots(): string[] {
   if (process.platform === "win32") {
-    return process.env.APPDATA ? [path.join(process.env.APPDATA, "FreeControl2", file)] : [];
+    return process.env.APPDATA ? [path.join(process.env.APPDATA, "FreeControl2")] : [];
   }
   if (process.platform === "darwin") {
     return process.env.HOME
-      ? [path.join(process.env.HOME, "Library", "Application Support", "FreeControl2", file)]
+      ? [path.join(process.env.HOME, "Library", "Application Support", "FreeControl2")]
       : [];
   }
   const root = process.env.XDG_DATA_HOME
     || (process.env.HOME ? path.join(process.env.HOME, ".local", "share") : null);
-  return root ? [path.join(root, "FreeControl2", file)] : [];
+  return root ? [path.join(root, "FreeControl2")] : [];
+}
+
+function discoveryCandidates(): string[] {
+  return dataRoots().map((root) => path.join(root, DISCOVERY_FILE));
+}
+
+async function detectInstalled(): Promise<boolean> {
+  const roots = dataRoots();
+  if (roots.length === 0) return true;
+  for (const root of roots) {
+    try {
+      const metadata = await lstat(root);
+      if (metadata.isDirectory()) return true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") return true;
+    }
+  }
+  return false;
 }
 
 function isLoopbackUrl(value: unknown): value is string {

@@ -2,6 +2,7 @@ import { METHODS, type Snapshot } from "../src/protocol.ts";
 
 const state: Snapshot = {
   status: "ready",
+  installed: true,
   devices: [
     {
       id: "demo-living-room",

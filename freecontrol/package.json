@@ -2,7 +2,7 @@
   "name": "@pdone/fuyu-freecontrol",
   "version": "1.0.0",
   "type": "module",
-  "description": "View and control local Android devices from Fuyu",
+  "description": "View and control local Android devices from Fuyu (requires FreeControl)",
   "license": "MIT",
   "author": {
     "name": "pdone",
@@ -46,8 +46,8 @@
       "en": "FreeControl"
     },
     "description": {
-      "zh-CN": "在浮屿中查看和控制本机 Android 设备",
-      "en": "View and control local Android devices from Fuyu"
+      "zh-CN": "在浮屿中查看和控制本机 Android 设备（需先安装 FreeControl）",
+      "en": "View and control local Android devices from Fuyu (requires FreeControl)"
     },
     "icon": "assets/icon.png",
     "screenshots": [

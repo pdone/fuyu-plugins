@@ -48,6 +48,44 @@
   line-height: 1.5;
 }
 
+.fuyu-freecontrol__note.is-error {
+  color: var(--fuyu-plugin-danger);
+}
+
+.fuyu-freecontrol__steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fuyu-plugin-text-muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.fuyu-freecontrol__steps li + li {
+  margin-top: 4px;
+}
+
+.fuyu-freecontrol__download {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fuyu-freecontrol__download-url {
+  overflow: hidden;
+  color: var(--fuyu-plugin-text-secondary);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: text;
+}
+
+.fuyu-freecontrol__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .fuyu-freecontrol__icon-button,
 .fuyu-freecontrol__action,
 .fuyu-freecontrol__button {
@@ -57,7 +95,7 @@
   background: var(--fuyu-plugin-surface);
   font: inherit;
   cursor: pointer;
-  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, filter 120ms ease;
 }
 
 .fuyu-freecontrol__icon-button {
@@ -73,7 +111,7 @@
 
 .fuyu-freecontrol__icon-button:hover,
 .fuyu-freecontrol__action:hover,
-.fuyu-freecontrol__button:hover {
+.fuyu-freecontrol__button.is-quiet:hover {
   border-color: var(--fuyu-plugin-accent);
   background: var(--fuyu-plugin-surface-hover);
 }
@@ -86,6 +124,12 @@
   color: var(--fuyu-plugin-on-accent);
   background: var(--fuyu-plugin-accent);
   white-space: nowrap;
+}
+
+.fuyu-freecontrol__button:hover {
+  border-color: transparent;
+  background: var(--fuyu-plugin-accent);
+  filter: brightness(1.08);
 }
 
 .fuyu-freecontrol__button.is-quiet {

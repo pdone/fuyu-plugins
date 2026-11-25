@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { clearInterval as nodeClearInterval, setInterval as nodeSetInterval, setTimeout as nodeSetTimeout } from "node:timers";
 import { apply } from "../src/host.ts";
-import { METHODS, emptySnapshot } from "../src/protocol.ts";
+import { DOWNLOAD_URL, METHODS, emptySnapshot } from "../src/protocol.ts";
 
 const delay = (ms) => new Promise((resolve) => nodeSetTimeout(resolve, ms));
 
@@ -18,7 +18,7 @@ async function waitFor(predicate) {
   throw new Error("condition not reached");
 }
 
-function createContext(dataDir) {
+function createContext(dataDir, clipboard = null) {
   const handlers = new Map();
   const publications = [];
   const setups = [];
@@ -30,6 +30,12 @@ function createContext(dataDir) {
     intervals,
     ctx: {
       dataDir,
+      services: {
+        get() {
+          if (!clipboard) throw new Error("clipboard unavailable");
+          return clipboard;
+        },
+      },
       clients: {
         handle(method, handler) {
           handlers.set(method, handler);
@@ -57,6 +63,10 @@ function discoveryPath(root) {
   if (process.platform === "win32") return path.join(root, "roaming", "FreeControl2", "fuyu-local.json");
   if (process.platform === "darwin") return path.join(root, "home", "Library", "Application Support", "FreeControl2", "fuyu-local.json");
   return path.join(root, "data", "FreeControl2", "fuyu-local.json");
+}
+
+function dataRoot(root) {
+  return path.dirname(discoveryPath(root));
 }
 
 function setDiscoveryEnv(root, t) {
@@ -148,14 +158,15 @@ test("host auto-discovers, reconnects and invokes device actions", async (t) => 
   assert.deepEqual(await harness.handlers.get(METHODS.snapshot)(), { ok: true, data: emptySnapshot() });
   assert.equal(harness.setups[0].needed, true);
   assert.deepEqual(harness.setups[0].hint, {
-    "zh-CN": "在 FreeControl 设置中开启浮屿设备控制",
-    en: "Enable Fuyu device control in FreeControl settings",
+    "zh-CN": "安装并开启 FreeControl",
+    en: "Install and enable FreeControl",
   });
 
   await writeDiscovery(file, baseUrl, "token-one");
   const discovered = await harness.handlers.get(METHODS.refresh)();
   assert.equal(discovered.ok, true);
   assert.equal(discovered.data.status, "ready");
+  assert.equal(discovered.data.installed, true);
   assert.equal(discovered.data.devices.length, 4);
   assert.equal(discovered.data.devices[0].alias, "测试设备");
   assert.equal(discovered.data.devices[3].status, "unknown");
@@ -205,7 +216,84 @@ test("host auto-discovers, reconnects and invokes device actions", async (t) => 
   const revoked = await harness.handlers.get(METHODS.refresh)();
   assert.equal(revoked.ok, true);
   assert.equal(revoked.data.status, "unpaired");
+  assert.equal(revoked.data.installed, true);
   assert.deepEqual(revoked.data.devices, []);
+  assert.deepEqual(harness.setups.at(-1).hint, {
+    "zh-CN": "在 FreeControl 设置中开启浮屿设备控制",
+    en: "Enable Fuyu device control in FreeControl settings",
+  });
+});
+
+test("host distinguishes missing data root from installed but unpaired", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "fuyu-install-presence-"));
+  setDiscoveryEnv(root, t);
+  const harness = createContext(path.join(root, "plugin-data"));
+  t.after(async () => {
+    for (const timer of harness.intervals) nodeClearInterval(timer);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  apply(harness.ctx);
+  await waitFor(() => harness.publications.length > 0);
+  const missing = await harness.handlers.get(METHODS.snapshot)();
+  assert.equal(missing.data.installed, false);
+  assert.deepEqual(harness.setups.at(-1).hint, {
+    "zh-CN": "安装并开启 FreeControl",
+    en: "Install and enable FreeControl",
+  });
+
+  await mkdir(dataRoot(root), { recursive: true });
+  const installed = await harness.handlers.get(METHODS.refresh)();
+  assert.equal(installed.data.installed, true);
+  assert.equal(installed.data.status, "unpaired");
+  assert.deepEqual(harness.setups.at(-1).hint, {
+    "zh-CN": "在 FreeControl 设置中开启浮屿设备控制",
+    en: "Enable Fuyu device control in FreeControl settings",
+  });
+});
+
+test("host treats data-root probe failures as installed", { skip: process.platform === "win32" }, async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "fuyu-install-probe-"));
+  setDiscoveryEnv(root, t);
+  const parent = path.dirname(dataRoot(root));
+  await mkdir(dataRoot(root), { recursive: true });
+  await chmod(parent, 0);
+  const harness = createContext(path.join(root, "plugin-data"));
+  t.after(async () => {
+    for (const timer of harness.intervals) nodeClearInterval(timer);
+    await chmod(parent, 0o700);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  apply(harness.ctx);
+  await waitFor(() => harness.publications.length > 0);
+  const result = await harness.handlers.get(METHODS.snapshot)();
+  assert.equal(result.data.installed, true);
+  assert.equal(result.data.status, "unpaired");
+});
+
+test("copy download link uses the clipboard service when available", async (t) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "fuyu-copy-link-"));
+  setDiscoveryEnv(root, t);
+  const copied = [];
+  const available = createContext(path.join(root, "available"), {
+    copyText: async ({ text }) => {
+      copied.push(text);
+      return { ok: true };
+    },
+  });
+  const missing = createContext(path.join(root, "missing"));
+  t.after(async () => {
+    for (const timer of [...available.intervals, ...missing.intervals]) nodeClearInterval(timer);
+    await rm(root, { recursive: true, force: true });
+  });
+
+  apply(available.ctx);
+  apply(missing.ctx);
+  await waitFor(() => missing.publications.length > 0);
+  assert.deepEqual(await available.handlers.get(METHODS.copyDownloadLink)(), { ok: true });
+  assert.deepEqual(copied, [DOWNLOAD_URL]);
+  assert.deepEqual(await missing.handlers.get(METHODS.copyDownloadLink)(), { ok: false });
 });
 
 test("invalid discovery records are ignored", async (t) => {
@@ -231,7 +319,7 @@ test("invalid discovery records are ignored", async (t) => {
   for (const overrides of cases) {
     await writeDiscovery(file, "http://127.0.0.1:1234", "valid-token", overrides);
     const result = await harness.handlers.get(METHODS.refresh)();
-    assert.deepEqual(result, { ok: true, data: emptySnapshot() });
+    assert.deepEqual(result, { ok: true, data: { ...emptySnapshot(), installed: true } });
   }
 
   await writeFile(
@@ -246,7 +334,7 @@ test("invalid discovery records are ignored", async (t) => {
     }),
   );
   const oversized = await harness.handlers.get(METHODS.refresh)();
-  assert.deepEqual(oversized, { ok: true, data: emptySnapshot() });
+  assert.deepEqual(oversized, { ok: true, data: { ...emptySnapshot(), installed: true } });
 });
 
 test("server errors map to stable codes and unauthorized state", async (t) => {
@@ -310,9 +398,15 @@ test("server errors map to stable codes and unauthorized state", async (t) => {
     assert.deepEqual(result, { ok: false, code: expected });
   }
 
+  stateStatus = 500;
+  const unavailable = await harness.handlers.get(METHODS.refresh)();
+  assert.equal(unavailable.data.status, "offline");
+  assert.equal(unavailable.data.error, "service_unavailable");
+
   stateStatus = 401;
   const unauthorized = await harness.handlers.get(METHODS.refresh)();
   assert.equal(unauthorized.data.status, "unauthorized");
+  assert.equal(unauthorized.data.error, "unauthorized");
   stateStatus = 200;
   const recovered = await harness.handlers.get(METHODS.refresh)();
   assert.equal(recovered.data.status, "ready");

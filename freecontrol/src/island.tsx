@@ -1,4 +1,5 @@
 import type { Context } from "fuyu-plugin";
+import { DOWNLOAD_URL } from "./protocol.ts";
 import { FreeControlIcon, RefreshIcon, UsbIcon, WifiIcon } from "./icons.tsx";
 import { localized, text } from "./text.ts";
 import { useFreeControl } from "./useFreeControl.ts";
@@ -9,17 +10,61 @@ export default function apply(ctx: Context) {
     const model = useFreeControl(ctx);
     const { snapshot } = model;
     const needsPairing = snapshot.status === "unpaired" || snapshot.status === "unauthorized";
+    const missing = snapshot.status === "unpaired" && !snapshot.installed;
 
     if (needsPairing) {
       return (
         <div className="fuyu-freecontrol fuyu-freecontrol--empty">
           <FreeControlIcon size={22} />
           <h3 className="fuyu-freecontrol__title">
-            {snapshot.status === "unauthorized" ? text.expiredTitle : text.unpairedTitle}
+            {snapshot.status === "unauthorized" ? text.expiredTitle : missing ? text.missingTitle : text.unpairedTitle}
           </h3>
-          <p className="fuyu-freecontrol__note">
-            {snapshot.status === "unauthorized" ? text.expiredBody : text.unpairedBody}
-          </p>
+          {missing ? (
+            <ol className="fuyu-freecontrol__steps">
+              {text.installSteps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+          ) : (
+            <>
+              <p className="fuyu-freecontrol__note">
+                {snapshot.status === "unauthorized" ? text.expiredBody : text.unpairedBody}
+              </p>
+              {snapshot.status === "unpaired" && (
+                <p className="fuyu-freecontrol__note">{text.versionHint}</p>
+              )}
+            </>
+          )}
+          {missing && (
+            <div className="fuyu-freecontrol__download">
+              <span className="fuyu-freecontrol__field-label">{text.downloadLabel}</span>
+              <code className="fuyu-freecontrol__download-url">{DOWNLOAD_URL}</code>
+            </div>
+          )}
+          <div className="fuyu-freecontrol__actions">
+            {missing && (
+              <button type="button" className="fuyu-freecontrol__button" onClick={() => void model.copyDownloadLink()}>
+                {model.copyState === "copied" ? text.copied : text.copyLink}
+              </button>
+            )}
+            <button
+              type="button"
+              className={`fuyu-freecontrol__button ${missing ? "is-quiet" : ""}`}
+              onClick={() => void model.refresh()}
+            >
+              {text.retry}
+            </button>
+          </div>
+          {missing && model.copyState === "failed" && (
+            <p className="fuyu-freecontrol__note is-error" role="alert">{text.copyFailed}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (snapshot.status === "connecting") {
+      return (
+        <div className="fuyu-freecontrol fuyu-freecontrol--empty">
+          <FreeControlIcon size={22} />
+          <p className="fuyu-freecontrol__note">{text.checking}</p>
           <button type="button" className="fuyu-freecontrol__button" onClick={() => void model.refresh()}>
             {text.retry}
           </button>

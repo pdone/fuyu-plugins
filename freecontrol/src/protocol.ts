@@ -3,11 +3,15 @@ export const METHODS = {
   refresh: "refresh",
   connect: "connect",
   disconnect: "disconnect",
+  copyDownloadLink: "copyDownloadLink",
 } as const;
 
 export const TOPICS = {
   state: "state",
 } as const;
+
+// Clipboard text only; the plugin never requests this host.
+export const DOWNLOAD_URL = "https://fc.awaw.cc/";
 
 export type DeviceKind = "usb" | "wifi";
 export type DeviceStatus = "connected" | "idle" | "offline" | "unknown";
@@ -33,6 +37,7 @@ export interface Device {
 
 export interface Snapshot {
   status: ConnectionStatus;
+  installed: boolean;
   devices: Device[];
   connectedCount: number;
   onlineCount: number;
@@ -40,6 +45,8 @@ export interface Snapshot {
   lastCheckedAt: number | null;
   error: ErrorCode | null;
 }
+
+export type CopyDownloadLinkResult = { ok: true } | { ok: false };
 
 export interface DeviceAction {
   deviceId: string;
@@ -55,6 +62,7 @@ export type CallResult<T> =
 export function emptySnapshot(): Snapshot {
   return {
     status: "unpaired",
+    installed: false,
     devices: [],
     connectedCount: 0,
     onlineCount: 0,

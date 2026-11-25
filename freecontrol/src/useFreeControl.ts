@@ -5,6 +5,7 @@ import {
   TOPICS,
   emptySnapshot,
   type CallResult,
+  type CopyDownloadLinkResult,
   type DeviceAction,
   type ErrorCode,
   type Snapshot,
@@ -15,9 +16,13 @@ export function useFreeControl(ctx: Context) {
   const [error, setError] = useState<ErrorCode | null>(null);
   const [busyDeviceId, setBusyDeviceId] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<"connect" | "disconnect" | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   useEffect(() => {
-    const take = (next: Snapshot) => setSnapshot(next);
+    const take = (next: Snapshot) => {
+      setSnapshot(next);
+      setError(next.error);
+    };
     const off = ctx.host.on(TOPICS.state, take);
     void callSnapshot();
     return () => {
@@ -33,6 +38,7 @@ export function useFreeControl(ctx: Context) {
         return null;
       }
       setSnapshot(result.data);
+      setError(result.data.error);
       return result.data;
     } catch {
       setError("internal");
@@ -49,8 +55,19 @@ export function useFreeControl(ctx: Context) {
         return;
       }
       setSnapshot(result.data);
+      setError(result.data.error);
     } catch {
       setError("internal");
+    }
+  }, [ctx]);
+
+  const copyDownloadLink = useCallback(async (): Promise<void> => {
+    setCopyState("idle");
+    try {
+      const result = await ctx.host.call<CopyDownloadLinkResult>(METHODS.copyDownloadLink);
+      setCopyState(result.ok ? "copied" : "failed");
+    } catch {
+      setCopyState("failed");
     }
   }, [ctx]);
 
@@ -79,6 +96,8 @@ export function useFreeControl(ctx: Context) {
     error,
     busyDeviceId,
     busyAction,
+    copyState,
+    copyDownloadLink,
     refresh,
     runAction,
   };
