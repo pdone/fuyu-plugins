@@ -1,0 +1,119 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "安装依赖",
+      "type": "shell",
+      "command": "npm install",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "detail": "在 freecontrol 目录安装项目依赖（npm install）"
+    },
+    {
+      "label": "开发模式",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "detail": "构建插件、注册到正在运行的浮屿，并在文件变化时自动重建（需保持 Fuyu 运行）"
+    },
+    {
+      "label": "构建插件",
+      "type": "shell",
+      "command": "npm run build",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "编译 TypeScript/React 源码，生成 dist 产物（npm run build）"
+    },
+    {
+      "label": "类型检查",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": "$tsc",
+      "detail": "用 TypeScript 编译器检查类型错误（npm run typecheck）"
+    },
+    {
+      "label": "代码检查（ESLint）",
+      "type": "shell",
+      "command": "npm run lint",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "detail": "用 ESLint 检查代码规范问题（npm run lint）"
+    },
+    {
+      "label": "运行测试",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "运行 tests 目录下的 Node 测试（npm test）"
+    },
+    {
+      "label": "插件校验",
+      "type": "shell",
+      "command": "npm run check",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "detail": "检查清单声明与代码是否一致，相当于商店会拦截的问题（npm run check）"
+    },
+    {
+      "label": "商店发布校验",
+      "type": "shell",
+      "command": "npm run check:market",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "detail": "以商店发布标准严格校验插件，含 review/listing 类警告（npm run check:market）"
+    },
+    {
+      "label": "打包插件",
+      "type": "shell",
+      "command": "npm run package",
+      "options": {
+        "cwd": "${workspaceFolder}/freecontrol"
+      },
+      "problemMatcher": [],
+      "detail": "打包插件为可分发的压缩包（npm run package）"
+    },
+    {
+      "label": "完整检查",
+      "dependsOn": [
+        "类型检查",
+        "代码检查（ESLint）",
+        "运行测试",
+        "插件校验"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": [],
+      "detail": "按顺序执行类型检查、ESLint、测试和插件校验，全部通过才算完成"
+    }
+  ]
+}
