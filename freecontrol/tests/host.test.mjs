@@ -8,6 +8,12 @@ import { clearInterval as nodeClearInterval, setInterval as nodeSetInterval, set
 import { apply } from "../src/host.ts";
 import { DOWNLOAD_URL, METHODS, emptySnapshot } from "../src/protocol.ts";
 
+test("download URL is GitHub Releases Latest", () => {
+  assert.equal(DOWNLOAD_URL, "https://github.com/pdone/FreeControl/releases/latest");
+  const legacyDomain = ["fc", "awaw", "cc"].join(".");
+  assert.ok(!DOWNLOAD_URL.includes(legacyDomain));
+});
+
 const delay = (ms) => new Promise((resolve) => nodeSetTimeout(resolve, ms));
 
 async function waitFor(predicate) {

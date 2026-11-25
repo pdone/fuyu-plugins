@@ -6,8 +6,7 @@ FreeControl 浮屿插件把本机 Android 设备列表、在线状态和连接�
 
 本插件需要本机已有 FreeControl。Windows 提供免安装单文件，下载后双击即可运行；macOS 与 Linux 按发布页说明安装。
 
-- 官网：<https://fc.awaw.cc/>
-- GitHub Releases：<https://github.com/pdone/FreeControl/releases/latest>
+- 下载地址（GitHub Releases Latest）：<https://github.com/pdone/FreeControl/releases/latest>
 
 ## 使用
 

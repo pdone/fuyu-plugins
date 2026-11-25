@@ -11,7 +11,7 @@ export const TOPICS = {
 } as const;
 
 // Clipboard text only; the plugin never requests this host.
-export const DOWNLOAD_URL = "https://fc.awaw.cc/";
+export const DOWNLOAD_URL = "https://github.com/pdone/FreeControl/releases/latest";
 
 export type DeviceKind = "usb" | "wifi";
 export type DeviceStatus = "connected" | "idle" | "offline" | "unknown";
